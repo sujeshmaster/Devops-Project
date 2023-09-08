@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+    tools {
+        maven "maven"
+    }
+    environment {
+        TAG_NAME = "siddhardan"
+        IMAGE_NAME = "flight"
+        PORT = "8000"
+        EXPOSED_PORT = "8080"
+    }
+    stages {
+        stage('Checkout from SCM') {
+            steps {
+                git branch: 'main', credentialsId: 'Project-1-SCM', url: 'https://github.com/siddhardan/Siddhu-Project-1.git'
+            }
+        }
+        stage ('Maven Package Build') {
+            steps {
+                bat 'mvn clean package'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB_CREDENTIALS', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        bat "docker build -t ${TAG_NAME}/${IMAGE_NAME}:${BUILD_NUMBER} ."
+                        bat "docker push ${TAG_NAME}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                    }
+                }    
+            }
+        }
+        stage('Deploy Docker Container') {
+            steps {
+                script {
+                    def runningContainers = bat(returnStatus: true, script: "docker ps -a -f label=${IMAGE_NAME}=1.0")
+                    if (runningContainers >=0) {
+                        bat "docker rm -f ${IMAGE_NAME}"
+                        bat "docker run -itd -p ${PORT}:${EXPOSED_PORT} --label ${IMAGE_NAME}=1.0 --name ${IMAGE_NAME} ${TAG_NAME}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                    } else {
+                        bat "docker run -itd -p ${PORT}:${EXPOSED_PORT} --label ${IMAGE_NAME}=1.0 --name ${IMAGE_NAME} ${TAG_NAME}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                    }
+                }
+            }
+        }
+    }
+    post {
+        success {
+            script {
+                bat "docker rmi -f ${TAG_NAME}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                bat "docker image prune -af --filter label=module=flight"
+            }
+        }
+        always {
+            script {
+                def projectName = env.JOB_NAME
+                def mailSubject = "${projectName} - BUILD-${BUILD_NUMBER} - ${currentBuild.result}!"
+                def mailBody = "${projectName} - BUILD-${BUILD_NUMBER} - ${currentBuild.result}!\n\nCheck console output at ${BUILD_URL} to view the results."
+                emailext (
+                    subject: mailSubject,
+                    body: mailBody,
+                    to: 'rsiddharth5758@gmail.com',
+                    from: 'siddhu7162@gmail.com',
+                    replyTo: 'siddhu7162@gmail.com',
+                    mimeType: 'text/html',
+                    attachLog: true ,
+                )
+            }
+        }
+    }
+}
