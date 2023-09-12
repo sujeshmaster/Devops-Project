@@ -52,7 +52,7 @@ pipeline {
                 bat "docker image prune -af --filter label=module=flight"
             }
         }
-        always {
+        /*always {
             script {
                 def projectName = env.JOB_NAME
                 def mailSubject = "${projectName} - BUILD-${BUILD_NUMBER} - ${currentBuild.result}!"
@@ -67,6 +67,6 @@ pipeline {
                     attachLog: true ,
                 )
             }
-        }
+        }*/
     }
 }
