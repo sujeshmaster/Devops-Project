@@ -12,7 +12,8 @@ pipeline {
     stages {
         stage('Checkout from SCM') {
             steps {
-                git branch: 'main', credentialsId: 'Project-1-SCM', url: 'https://github.com/siddhardan/Siddhu-Project-1.git'
+                //git branch: 'main', credentialsId: 'Project-1-SCM',  'https://github.com/siddhardan/Siddhu-Project-1.git'
+                  git branch: 'main',url:https://github.com/sujeshmaster/Devops-Project.git'
             }
         }
         stage ('Maven Package Build') {
